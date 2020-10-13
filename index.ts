@@ -1,9 +1,9 @@
 const w : number = window.innerWidth 
 const h : number = window.innerHeight
-const parts : number = 4  
+const parts : number = 5  
 const scGap : number = 0.02 / parts 
 const strokeFactor : number = 90
-const sizeFactor : number = 5.6 
+const sizeFactor : number = 2.8
 const delay : number = 20 
 const backColor : string = "#BDBDBD"
 const colors : Array<string> = [
@@ -21,7 +21,7 @@ class ScaleUtil {
     }
 
     static divideScale(scale : number, i : number, n : number) : number {
-        return Math.min(1 / n, ScaleUtil.maxScale(scale, i, n))
+        return Math.min(1 / n, ScaleUtil.maxScale(scale, i, n)) * n 
     }
 
     static sinify(scale : number) : number {
@@ -36,6 +36,9 @@ class ScaleUtil {
 class DrawingUtil {
 
     static drawLine(context : CanvasRenderingContext2D, x1 : number, y1 : number, x2 : number, y2 : number) {
+        if (x1 == x2 && y1 == y2) {
+            return
+        }
         context.beginPath()
         context.moveTo(x1, y1)
         context.lineTo(x2, y2)
@@ -50,7 +53,9 @@ class Point {
     }
 
     drawLine(context : CanvasRenderingContext2D, point : Point, scale : number) {
-        DrawingUtil.drawLine(context, this.x, this.y, ScaleUtil.updateFromTo(scale, this.x, point.x), ScaleUtil.updateFromTo(scale, this.y, point.y))
+        const x = ScaleUtil.updateFromTo(this.x, point.x, scale)
+        const y = ScaleUtil.updateFromTo(this.y, point.y, scale)
+        DrawingUtil.drawLine(context, this.x, this.y, x, y)
     }
 
     static zipToPoint(xVertices : Array<number>, yVertices : Array<number>) : Array<Point> {
@@ -65,17 +70,19 @@ class Point {
 class NodeDrawingUtil {
 
     static drawClipTriLineFillPath(context : CanvasRenderingContext2D, size : number, scale : number) {
+        context.save()
         context.beginPath()
         context.moveTo(0, h - size)
-        context.lineTo(w / 2 - size, h - size)
+        context.lineTo(w / 2 - size / 2, h - size)
         context.lineTo(w / 2, h / 2)
-        context.lineTo(w / 2 + size, h - size)
+        context.lineTo(w / 2 + size / 2, h - size)
         context.lineTo(w, h - size)
         context.lineTo(w, h)
         context.lineTo(0, h)
         context.lineTo(0, h - size)
         context.clip()
-        context.fillRect(0, 0, w * scale, h / 2)
+        context.fillRect(0, h / 2, w * scale, h / 2)
+        context.restore()
     } 
 
     static drawClipTriLineFill(context : CanvasRenderingContext2D, scale : number) {
@@ -90,7 +97,7 @@ class NodeDrawingUtil {
             prevPoint.drawLine(context, points[j], sfj)
             prevPoint = points[j]
         }
-        NodeDrawingUtil.drawClipTriLineFillPath(context, size, ScaleUtil.divideScale(sf, j, parts))
+        NodeDrawingUtil.drawClipTriLineFillPath(context, size, ScaleUtil.divideScale(sf, 4, parts))
     }
 
     static drawLCTPNode(context : CanvasRenderingContext2D, i : number, scale : number) {
@@ -164,7 +171,7 @@ class State {
     prevScale : number = 0 
 
     update(cb : Function) {
-        this.scale = this.prevScale + this.dir 
+        this.scale += scGap * this.dir 
         if (Math.abs(this.scale - this.prevScale) > 1) {
             this.scale = this.prevScale + this.dir 
             this.dir = 0 
