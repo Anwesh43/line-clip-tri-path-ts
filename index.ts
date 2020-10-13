@@ -27,6 +27,10 @@ class ScaleUtil {
     static sinify(scale : number) : number {
         return Math.sin(scale * Math.PI)
     }
+
+    static updateFromTo(a : number, b : number, scale : number) : number {
+        return a + (b - a) * scale 
+    }
 }
 
 class DrawingUtil {
@@ -45,8 +49,55 @@ class Point {
 
     }
 
-    drawLine(context : CanvasRenderingContext2D, point : Point) {
-        DrawingUtil.drawLine(context, this.x, this.y, point.x, point.y)
+    drawLine(context : CanvasRenderingContext2D, point : Point, scale : number) {
+        DrawingUtil.drawLine(context, this.x, this.y, ScaleUtil.updateFromTo(scale, this.x, point.x), ScaleUtil.updateFromTo(scale, this.y, point.y))
+    }
+
+    static zipToPoint(xVertices : Array<number>, yVertices : Array<number>) : Array<Point> {
+        const points : Array<Point> = []
+        for (var i = 0; i < xVertices.length; i++) {
+            points.push(new Point(xVertices[i], yVertices[i]))
+        }
+        return points 
     }
 }
 
+class NodeDrawingUtil {
+
+    static drawClipTriLineFillPath(context : CanvasRenderingContext2D, size : number, scale : number) {
+        context.beginPath()
+        context.moveTo(0, h - size)
+        context.lineTo(w / 2 - size, h - size)
+        context.lineTo(w / 2, h / 2)
+        context.lineTo(w / 2 + size, h - size)
+        context.lineTo(w, h - size)
+        context.lineTo(w, h)
+        context.lineTo(0, h)
+        context.lineTo(0, h - size)
+        context.clip()
+        context.fillRect(0, 0, w * scale, h / 2)
+    } 
+
+    static drawClipTriLineFill(context : CanvasRenderingContext2D, scale : number) {
+        const sf : number = ScaleUtil.sinify(scale)
+        const size : number = Math.min(w, h) / sizeFactor 
+        const xs : Array<number> = [0, w / 2 - size / 2, w / 2, w / 2 + size / 2, w]
+        const ys : Array<number> = [h - size, h - size, h / 2, h - size, h - size]
+        const points : Array<Point> = Point.zipToPoint(xs, ys) 
+        let prevPoint : Point = points[0]
+        for (var j = 1; j < points.length; j++) {
+            const sfj : number = ScaleUtil.divideScale(sf, j - 1, parts)
+            prevPoint.drawLine(context, points[j], sfj)
+            prevPoint = points[j]
+        }
+        NodeDrawingUtil.drawClipTriLineFillPath(context, size, ScaleUtil.divideScale(sf, j, parts))
+    }
+
+    static drawLCTPNode(context : CanvasRenderingContext2D, i : number, scale : number) {
+        context.strokeStyle = colors[i]
+        context.fillStyle = colors[i]
+        context.lineWidth = Math.min(w, h) / strokeFactor 
+        context.lineCap = 'round'
+        NodeDrawingUtil.drawClipTriLineFill(context, scale)
+    }
+}
