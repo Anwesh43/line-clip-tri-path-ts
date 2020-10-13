@@ -21,7 +21,7 @@ class ScaleUtil {
     }
 
     static divideScale(scale : number, i : number, n : number) : number {
-        return Math.min(1 / n, ScaleUtil.divideScale(scale, i, n))
+        return Math.min(1 / n, ScaleUtil.maxScale(scale, i, n))
     }
 
     static sinify(scale : number) : number {
