@@ -241,3 +241,25 @@ class LineClipTriPath {
         this.curr.startUpdating(cb)
     }
 }
+
+class Renderer {
+
+    animator : Animator = new Animator()
+    lctp : LineClipTriPath = new LineClipTriPath()
+    
+    draw(context : CanvasRenderingContext2D) {
+        this.lctp.draw(context)
+    }
+
+    handleTap(cb : Function) {
+        this.lctp.startUpdating(() => {
+            this.animator.start(() => {
+                cb()
+                this.lctp.update(() => {
+                    this.animator.stop()
+                    cb()
+                })
+            })
+        })
+    }
+}
